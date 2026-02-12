@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-//prueba rama develop
+//prueba rama develop: probando git pull
 @RestController
 @RequestMapping("/api/tarjetas")
 public class TarjetaUsuarioController {
