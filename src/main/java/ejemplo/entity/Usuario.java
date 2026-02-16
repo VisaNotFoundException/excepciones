@@ -1,5 +1,6 @@
 package ejemplo.entity;
 
+import ejemplo.dto.Roles;
 import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 
@@ -20,7 +21,18 @@ public class Usuario {
     @Column(name="fecha_creacion", nullable = false)
     private OffsetDateTime fechaCreacion = OffsetDateTime.now();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Roles rol = Roles.USUARIO;
+
     public Usuario() {}
+
+    public Usuario(String nombreCompleto, String email, Roles rol) {
+        this.nombreCompleto = nombreCompleto;
+        this.email = email;
+        this.rol = rol != null ? rol : Roles.USUARIO;
+    }
+
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -33,4 +45,13 @@ public class Usuario {
 
     public OffsetDateTime getFechaCreacion() { return fechaCreacion; }
     public void setFechaCreacion(OffsetDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
+
+    public Roles getRol() { return rol; }
+    public void setRol(Roles rol) {  this.rol = rol != null ? rol : Roles.USUARIO; }
+
+    @PrePersist
+    public void prePersist() {
+        if (fechaCreacion == null) fechaCreacion = OffsetDateTime.now();
+        if (rol == null) rol = Roles.USUARIO;
+    }
 }
