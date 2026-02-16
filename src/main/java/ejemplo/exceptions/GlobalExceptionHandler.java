@@ -11,7 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -51,18 +52,56 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> validacion(MethodArgumentNotValidException ex, HttpServletRequest req) {
-        return responder(BadRequestException.requestInvalida("Validación fallida"), req);
+
+        var fe = ex.getBindingResult().getFieldErrors().stream().findFirst().orElse(null);
+
+        if (fe == null) {
+            return responder(BadRequestException.requestInvalida("Validación fallida"), req);
+        }
+
+        String campo = fe.getField();
+        String code = fe.getCode(); // NotBlank, NotNull, Email, etc.
+        String msg = fe.getDefaultMessage();
+
+        if ("NotNull".equals(code) || "NotBlank".equals(code) || "NotEmpty".equals(code)) {
+            return responder(BadRequestException.parametroFaltante(campo), req); // APP-03
+        }
+
+        return responder(BadRequestException.formatoInvalido(campo, msg), req); // APP-04
     }
+
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> constraint(DataIntegrityViolationException ex, HttpServletRequest req) {
         return responder(DatabaseException.restriccionViolada(rootMessage(ex), ex), req);
     }
 
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> jsonNoLeible(HttpMessageNotReadableException ex, HttpServletRequest req) {
+
+        Throwable root = obtenerCausaRaiz(ex);
+
+        // Enum inválido / tipo inválido (Jackson)
+        if (root instanceof InvalidFormatException ife) {
+            String campo = (ife.getPath() != null && !ife.getPath().isEmpty())
+                    ? ife.getPath().get(0).getFieldName()
+                    : "body";
+
+            String valor = String.valueOf(ife.getValue());
+            return responder(BadRequestException.formatoInvalido(campo, valor), req); // APP-04
+        }
+
+        return responder(BadRequestException.requestInvalida("JSON malformado"), req); // APP-02
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> desconocido(Exception ex, HttpServletRequest req) {
         return responder(new MicroserviceException(ErrorCode.APP_01_ERROR_INTERNO, rootMessage(ex)), req);
     }
+
+
+
 
     // =========================
     // RESPONDER (oculta info)
