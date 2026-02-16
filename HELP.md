@@ -68,8 +68,10 @@ CREATE TABLE usuarios (
 id                BIGSERIAL PRIMARY KEY,
 nombre_completo   TEXT NOT NULL,
 email             TEXT NOT NULL UNIQUE,
-fecha_creacion    TIMESTAMPTZ NOT NULL DEFAULT now()
+fecha_creacion    TIMESTAMPTZ NOT NULL DEFAULT now(),
+rol               TEXT NOT NULL DEFAULT 'USUARIO'
 );
+
 
 -- ============================
 -- 2) TABLA: TARJETAS DE USUARIO
