@@ -60,6 +60,21 @@ DROP TABLE IF EXISTS ventas;
 DROP TABLE IF EXISTS tarjetas_usuario;
 DROP TABLE IF EXISTS productos;
 DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS roles_de_usuario;
+
+-- ============================
+-- 0) TABLA: ROLES DE USUARIO
+-- ============================
+CREATE TABLE roles_de_usuario (
+id     BIGSERIAL PRIMARY KEY,
+nombre TEXT NOT NULL UNIQUE
+);
+
+-- Roles base (alineados con tu enum)
+INSERT INTO roles_de_usuario (id, nombre) VALUES
+(1, 'USUARIO'),
+(2, 'ADMIN'),
+(3, 'VIP');
 
 -- ============================
 -- 1) TABLA: USUARIOS
@@ -69,9 +84,8 @@ id                BIGSERIAL PRIMARY KEY,
 nombre_completo   TEXT NOT NULL,
 email             TEXT NOT NULL UNIQUE,
 fecha_creacion    TIMESTAMPTZ NOT NULL DEFAULT now(),
-rol               TEXT NOT NULL DEFAULT 'USUARIO'
+rol_id            BIGINT NOT NULL REFERENCES roles_de_usuario(id)
 );
-
 
 -- ============================
 -- 2) TABLA: TARJETAS DE USUARIO
@@ -123,10 +137,10 @@ fecha_compra         TIMESTAMPTZ NOT NULL DEFAULT now()
 -- INSERTS DE DATOS FALSOS
 -- ============================
 
--- Usuarios
-INSERT INTO usuarios (id, nombre_completo, email, fecha_creacion) VALUES
-(1, 'Juan Pérez', 'juan.perez@correo.com', '2026-02-01 10:15:00-03'),
-(2, 'Ana García', 'ana.garcia@correo.com', '2026-02-02 12:40:00-03');
+-- Usuarios (ahora con rol_id)
+INSERT INTO usuarios (id, nombre_completo, email, fecha_creacion, rol_id) VALUES
+(1, 'Juan Pérez', 'juan.perez@correo.com', '2026-02-01 10:15:00-03', 1),
+(2, 'Ana García', 'ana.garcia@correo.com', '2026-02-02 12:40:00-03', 1);
 
 -- Tarjetas (2 por usuario)
 INSERT INTO tarjetas_usuario
@@ -157,7 +171,8 @@ VALUES
 
 COMMIT;
 
-![img.png](img.png)
+
+![img_3.png](img_3.png)
 
 para correr script tocar en la hoja con el triangulito dentro (3er icono)
 
@@ -283,5 +298,20 @@ git config user.email "tuemaildelacuentadegithub"
 ![img_5.png](img_5.png)
 
 esto ya deberia habilitarlos para poder tirar un git push..
+
+## Migraciones de Base de Datos
+
+A partir de este commit se agregó normalización de roles.
+
+Para actualizar una base existente:
+
+1. Ejecutar script:
+   db/manual/V2__create_roles_de_usuario.sql
+
+2. Ejecutar update en usuarios para setear rol_id
+
+3. Reiniciar la app
+
+![img_2.png](img_2.png)
 
 
