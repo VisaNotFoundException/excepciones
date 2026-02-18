@@ -60,6 +60,24 @@ DROP TABLE IF EXISTS ventas;
 DROP TABLE IF EXISTS tarjetas_usuario;
 DROP TABLE IF EXISTS productos;
 DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS roles_de_usuario;
+
+-- ============================
+-- 0) TABLA: ROLES DE USUARIO
+-- ============================
+CREATE TABLE roles_de_usuario (
+id     BIGSERIAL PRIMARY KEY,
+nombre TEXT NOT NULL UNIQUE
+);
+
+-- Roles base (alineados con el enum Roles)
+INSERT INTO roles_de_usuario (nombre) VALUES
+('USUARIO'),
+('ADMIN'),
+('VIP'),
+('OPERADOR'),
+('BANEADO');
+ON CONFLICT (nombre) DO NOTHING;
 
 -- ============================
 -- 1) TABLA: USUARIOS
@@ -69,9 +87,8 @@ id                BIGSERIAL PRIMARY KEY,
 nombre_completo   TEXT NOT NULL,
 email             TEXT NOT NULL UNIQUE,
 fecha_creacion    TIMESTAMPTZ NOT NULL DEFAULT now(),
-rol               TEXT NOT NULL DEFAULT 'USUARIO'
+rol_id            BIGINT NOT NULL REFERENCES roles_de_usuario(id)
 );
-
 
 -- ============================
 -- 2) TABLA: TARJETAS DE USUARIO
@@ -123,10 +140,12 @@ fecha_compra         TIMESTAMPTZ NOT NULL DEFAULT now()
 -- INSERTS DE DATOS FALSOS
 -- ============================
 
--- Usuarios
-INSERT INTO usuarios (id, nombre_completo, email, fecha_creacion) VALUES
-(1, 'Juan Pérez', 'juan.perez@correo.com', '2026-02-01 10:15:00-03'),
-(2, 'Ana García', 'ana.garcia@correo.com', '2026-02-02 12:40:00-03');
+-- Usuarios (USUARIO por defecto)
+INSERT INTO usuarios (id, nombre_completo, email, fecha_creacion, rol_id) VALUES
+(1, 'Juan Pérez', 'juan.perez@correo.com', '2026-02-01 10:15:00-03',
+(SELECT id FROM roles_de_usuario WHERE nombre='USUARIO')),
+(2, 'Ana García', 'ana.garcia@correo.com', '2026-02-02 12:40:00-03',
+(SELECT id FROM roles_de_usuario WHERE nombre='USUARIO'));
 
 -- Tarjetas (2 por usuario)
 INSERT INTO tarjetas_usuario
@@ -157,11 +176,19 @@ VALUES
 
 COMMIT;
 
-![img.png](img.png)
+![img_4.png](img_4.png)
 
 para correr script tocar en la hoja con el triangulito dentro (3er icono)
 
 ![img_1.png](img_1.png)
+
+# Opción B: Migración (si ya tenías base creada con usuarios.rol como TEXT)
+
+Si ya existe una base anterior (con columna usuarios.rol), ejecutar:
+
+src/main/resources/db/manual/V2_create_roles.sql
+
+Luego reiniciar la app.
 
 # Probar en postman
 
@@ -283,5 +310,4 @@ git config user.email "tuemaildelacuentadegithub"
 ![img_5.png](img_5.png)
 
 esto ya deberia habilitarlos para poder tirar un git push..
-
 
